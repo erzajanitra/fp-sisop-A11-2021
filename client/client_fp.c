@@ -14,62 +14,77 @@ int flag=0;
 
 void authent(){
     char input_client[100];
+        
     read(sock, buffer, 1024); 
     printf("%s\n", buffer);
     printf("Input Field : ");
     gets(input_client);
-    send(sock, input_client, strlen(input_client), 0);
+    send(sock, input_client, strlen(input_client), 0);//sudo
+    
     bzero(buffer, 1024);
-    read(sock, buffer, 1024);
+    read(sock, buffer, 1024);//root auth
     
     char inp_user[100];
-    strcpy(inp_user,buffer);
-    bzero(buffer, 1024);
-
+    strcpy(inp_user,buffer); 
+    bzero(buffer,1024);
     if (strstr(inp_user, "=== Root Authority ===") != 0)
     {
-        printf("%s\n", inp_user);
-        char command[200];
-        gets(command);
-        send(sock, command, strlen(command), 0);
+        flag = 2;
+        while(flag == 2){
+            printf("mySQL:root> ");
+            char command[200];
+            gets(command);
+            send(sock, command, strlen(command), 0);
 
-        if(strstr(command,"quit")!=0){
-            sock = 0;
+            if (strstr(command, "quit") != 0)
+            {
+                flag = 0;
+            }
         }
     }
     else if (strstr(inp_user, "=== Checking For Password ===") != 0)
     {
-        printf("%s\n", inp_user);
+        flag = 3;
+        printf("%s\n",inp_user);
+        if(flag == 3){
         read(sock, buffer, 1024);
-        //printf("%s\n", buffer); ada/nggak ada.
-        if(strstr(buffer,"ada")!=0){ 
+        //printf("%s\n", buffer);ada/nggak ada.
+        if (strstr(buffer, "ada") != 0)
+        {
             flag = 1;
-        }else{
-            flag = 0;
+            printf("Ketemu\n");
         }
-
+        else
+        {
+            flag = 0;
+            printf("Gak Ketemu\n");
+        }
+        }
         while(flag == 1){
-            printf("mySQL >");
+            
             send(sock,"User Enter!",11,0);
+            printf("mySQL:user> ");
             char usr[100];
             gets(usr);
             send(sock,usr,strlen(usr),0);
             bzero(buffer,1024);
             read(sock,buffer,1024);
 
-            if(strstr(buffer,"quit")!=0){
+            if(strstr(usr,"quit")!=0){
                 printf("%s\n",buffer);
                 flag = 0;
             }else{
                 printf("%s\n",buffer);
                 continue;
             }
-
-
         }
+    }else if(strstr(inp_user, "quit") != 0)
+    {
+        exit(0);
     }else{
-        sock = 0;
+        printf("Wrong Command\n");
     }
+    bzero(buffer,1024);
 }
 
 int main(int argc, char const *argv[]) {
