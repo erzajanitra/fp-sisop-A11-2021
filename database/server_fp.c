@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <sys/socket.h>
 #include <stdlib.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <netinet/in.h>
 #include <string.h>
 #include <unistd.h>
@@ -10,15 +12,20 @@
 
 #define PORT 8080
 FILE *fp, *fw, *p;
-char *userdb = "/home/tsania/Documents/FP/userdb.txt";
+char *userdb = "/home/tsania/Documents/efpe/userdb.txt";
 char *usersdb = "/home/tsania/Documents/FP/usersdb.txt";
-char *p_file = "/home/tsania/Documents/FP/permissiondb.txt";
+char *p_file = "/home/tsania/Documents/efpe/permissiondb.txt";
 int server_fd, new_socket, valread;
 struct sockaddr_in address;
 int opt = 1;
 int addrlen = sizeof(address);
 char buffer[1024] = {0};
 int flag =0;
+
+struct dbku{
+  char name[100];
+  char permissions[100];
+};
 
 char *success = "success";
 char *failed = "failed";
@@ -28,7 +35,7 @@ struct authent_data{
   char password[100];
   char permission[100];
 };
-char *fplog = "/home/tsania/Documents/FP/FP.log";
+char *fplog = "/home/tsania/Documents/efpe/FP.log";
 
 struct buatlog{
     char username[100];
@@ -51,12 +58,12 @@ void logging(struct buatlog data){
 
 
 void create_db(char arr[]){
+    struct dbku dbase;
     char filepath[100];
     strcpy(filepath,"/home/tsania/Documents/FP/");
     strcat(filepath,arr);
     mkdir(filepath,0777);
 
-   
 }
 
 bool cari_akun(char *login){
@@ -89,8 +96,9 @@ void authent(){
     if(strncmp(inp_cmd,"sudo",4)==0){
         flag = 2; 
         int i=0;
-      while(flag == 2){
         send(new_socket, "=== Root Authority ===", 25, 0);
+       
+      while(flag == 2){
         bzero(buffer,1024);
         read(new_socket, buffer, 1024);//baca input
         printf("%s\n",buffer );
@@ -98,17 +106,21 @@ void authent(){
         if (strstr(buffer, "CREATE USER") != 0)
         {
           printf("CREATE USER!\n");
-          
+          char checkpoint[100];
+          bzero(checkpoint,100);
+          strcpy(checkpoint,buffer);
           //char misal[100] = "CREATE USER jack IDENTIFIED BY admin123";
-          char *pwd = strrchr(buffer, ' ') + 1;
-          char *uname = strtok(buffer, " ");
+          char real[100];
+          strncpy(real,checkpoint,strlen(checkpoint)-1);
+          char *pwd = strrchr(real, ' ') + 1;
+          char *uname = strtok(real, " ");
           int n = 0;
           char user[100];
           while (uname != NULL && n < 2)
           {
             uname = strtok(NULL, " ");
             if (n == 1)
-              strcat(user, uname);
+              strcpy(user, uname);
             n++;
           }
 
@@ -137,29 +149,37 @@ void authent(){
           strcpy(db,dbnama);
           
           int iter=0;
-
+          int ada = 0;
           while(iter < i){
-            
+            printf("%s\n",new[iter].username);
             if(strcmp(username,new[iter].username)==0){
                 strcat(new[iter].permission,db);
-                p = fopen(p_file, "a");
-                fprintf(p,"%s %s %s\n",new[iter].username,new[iter].password,new[iter].permission);
-                fclose(p);
+                ada = 1;
                 break;
             }
             iter++;
+          }
+
+          if(ada == 1){
+            p = fopen(p_file, "a");
+            fprintf(p, "%s %s %s\n", new[iter].username, new[iter].password, new[iter].permission);
+            fclose(p);
+          }else{
+            printf("Not Found\n");
           }
 
             printf("Grant Access Success!\n");
         }else{
           flag = 0;
         }
+        bzero(buffer,1024);
       }
     }else if(strncmp(inp_cmd,"./mySQL",7)==0){
       send(new_socket, "=== Checking For Password ===", 30, 0);
-
       char login[100];
-      sprintf(login, "%s", strchr(inp_cmd, '-'));
+      char misal[100];
+      sprintf(misal, "%s", strchr(inp_cmd, '-'));
+      strncpy(login,misal,strlen(misal)-1);
       printf("Login String : %s\n",login);
       struct authent_data attempt;
 
@@ -167,6 +187,7 @@ void authent(){
       strcpy(attempt.password, strrchr(login, '-'));
 
       if(cari_akun(login)==1){
+        send(new_socket,"ada",3,0);
         send(new_socket,"ada",3,0);
         flag = 1;
       }else{
@@ -213,10 +234,9 @@ void authent(){
             }
             it++;
           }
-          fw = fopen(usersdb, "a");
+	  fw = fopen(usersdb, "a");
           fprintf(fw,"%s\n",nama_db);
           fclose(fw);
-          //printf("DB Create Success!\n");
           send(new_socket,"create db success!",18,0);
           strcpy(logs.desc,buffer);
           logging(logs);
@@ -234,8 +254,10 @@ void authent(){
           logging(logs);
         }
       }
+    }else if(strstr(inp_cmd,"quit")!=0){
+       exit(0);
     }else{
-      new_socket = 0;
+      printf("Wrong Command\n");
     }
 
   bzero(buffer,1024);
