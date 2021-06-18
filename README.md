@@ -63,6 +63,8 @@ while(flag == 1){
     //dapat dilihat pada source code.
 }
 ```
+contoh OUTPUT :
+![image](https://user-images.githubusercontent.com/69724694/122554064-ae9f9b00-d062-11eb-9f48-0f71ba759c8d.png)
 
 ## Authorization
 ### Root/Superuser
