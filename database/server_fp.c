@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <sys/socket.h>
 #include <stdlib.h>
@@ -10,8 +9,9 @@
 #include <time.h>
 
 #define PORT 8080
-FILE *fp, *fw;
+FILE *fp, *fw, *p;
 char *userdb = "/home/tsania/Documents/FP/userdb.txt";
+char *p_file = "/home/tsania/Documents/FP/permissiondb.txt";
 int server_fd, new_socket, valread;
 struct sockaddr_in address;
 int opt = 1;
@@ -49,8 +49,13 @@ void logging(struct buatlog data){
 }
 
 
-void create_db(struct authent_data data){
+void create_db(char arr[]){
+    char filepath[100];
+    strcpy(filepath,"/home/tsania/Documents/FP/");
+    strcat(filepath,arr);
+    mkdir(filepath,0777);
 
+    printf("DB Create Success!\n");
 }
 
 bool cari_akun(char *login){
@@ -74,14 +79,16 @@ bool cari_akun(char *login){
 
 void authent(){
     char inp_cmd[100];
+    struct authent_data new[100];
     char *welcome = "=== Please Sign In to Continue ===\nFormat : ./mySQL -u username -p password\n";
     send(new_socket , welcome , strlen(welcome) , 0 );
     read( new_socket , buffer, 1024);//user command : ./mySQL blablabla
     
     strcpy(inp_cmd,buffer);
     if(strncmp(inp_cmd,"sudo",4)==0){
-        struct authent_data new[100];
+        flag = 2; 
         int i=0;
+      while(flag == 2){
         send(new_socket, "=== Root Authority ===", 25, 0);
         bzero(buffer,1024);
         read(new_socket, buffer, 1024);//baca input
@@ -132,8 +139,11 @@ void authent(){
 
           while(iter < i){
             
-            if(strcmp(username,new[i].username)==0){
-                strcat(new[i].permission,db);
+            if(strcmp(username,new[iter].username)==0){
+                strcat(new[iter].permission,db);
+                p = fopen(p_file, "a");
+                fprintf(p,"%s %s %s\n",new[iter].username,new[iter].password,new[iter].permission);
+                fclose(p);
                 break;
             }
             iter++;
@@ -141,8 +151,9 @@ void authent(){
 
             printf("Grant Access Success!\n");
         }else{
-          new_socket = 0;
+          flag = 0;
         }
+      }
     }else if(strncmp(inp_cmd,"./mySQL",7)==0){
       send(new_socket, "=== Checking For Password ===", 30, 0);
 
@@ -167,14 +178,41 @@ void authent(){
         read(new_socket,buffer,1024);
         printf("%s\n",buffer);
         struct buatlog logs;
-        strcpy(logs.username,attempt.username);
+        char *asli = strchr(attempt.username,' ')+1;
+        char uname[100];
+        strcpy(uname,asli);
+        strcpy(logs.username,uname);
         bzero(buffer,1024);
         read(new_socket,buffer,1024);
 
         if(strcmp(buffer,"quit")==0){
-          send(new_socket,"Quit",4,0);
+          send(new_socket,"quit",4,0);
           flag = 0;
         }else if(strstr(buffer,"CREATE DATABASE")!=0){
+          char cmd_input[100];
+          strncpy(cmd_input,buffer,strlen(buffer)-1);
+          char *db = strtok(cmd_input, " ");
+          int n = 0;
+          char nama_db[100];
+          while (db != NULL && n < 1 )
+          {
+            db = strtok(NULL, " ");
+            if (n == 1)
+              strcpy(nama_db,db);
+            n++;
+          }
+
+          int it=0;
+
+          while(it < 100){
+            
+            if(strstr(nama_db,new[it].permission)!=0){
+                create_db(nama_db);
+                break;
+            }
+            it++;
+          }
+
           send(new_socket,"create db success!",18,0);
           strcpy(logs.desc,buffer);
           logging(logs);
@@ -234,7 +272,7 @@ int main(int argc, char const *argv[]) {
     }
 
 
-    while(new_socket != 0){
+    while(new_socket >= 0){
       authent();
     }
     
