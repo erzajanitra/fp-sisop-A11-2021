@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <sys/socket.h>
 #include <stdlib.h>
@@ -34,7 +33,7 @@ void authent(){
         gets(command);
         send(sock, command, strlen(command), 0);
 
-        if(strstr(command,"\\q")!=0){
+        if(strstr(command,"quit")!=0){
             sock = 0;
         }
     }
@@ -58,7 +57,7 @@ void authent(){
             bzero(buffer,1024);
             read(sock,buffer,1024);
 
-            if(strstr(buffer,"Quit")!=0){
+            if(strstr(buffer,"quit")!=0){
                 printf("%s\n",buffer);
                 flag = 0;
             }else{
@@ -95,7 +94,7 @@ int main(int argc, char const *argv[]) {
         return -1;
     }
 
-    while(sock != 0){
+    while(sock >= 0){
         authent();
     }
     return 0;
