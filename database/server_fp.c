@@ -11,6 +11,7 @@
 #define PORT 8080
 FILE *fp, *fw, *p;
 char *userdb = "/home/tsania/Documents/FP/userdb.txt";
+char *usersdb = "/home/tsania/Documents/FP/usersdb.txt";
 char *p_file = "/home/tsania/Documents/FP/permissiondb.txt";
 int server_fd, new_socket, valread;
 struct sockaddr_in address;
@@ -55,7 +56,7 @@ void create_db(char arr[]){
     strcat(filepath,arr);
     mkdir(filepath,0777);
 
-    printf("DB Create Success!\n");
+   
 }
 
 bool cari_akun(char *login){
@@ -212,7 +213,10 @@ void authent(){
             }
             it++;
           }
-
+          fw = fopen(usersdb, "a");
+          fprintf(fw,"%s\n",nama_db);
+          fclose(fw);
+          //printf("DB Create Success!\n");
           send(new_socket,"create db success!",18,0);
           strcpy(logs.desc,buffer);
           logging(logs);
